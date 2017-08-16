@@ -1,6 +1,7 @@
 package com.udacity.firebase.shoppinglistplusplus.ui.activeListDetails;
 
 import android.app.DialogFragment;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -16,6 +17,7 @@ import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
 import com.udacity.firebase.shoppinglistplusplus.R;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
+import com.udacity.firebase.shoppinglistplusplus.model.ShoppingListItem;
 import com.udacity.firebase.shoppinglistplusplus.ui.BaseActivity;
 import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
 
@@ -25,8 +27,11 @@ import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
 public class ActiveListDetailsActivity extends BaseActivity {
     private static final String LOG_TAG = ActiveListDetailsActivity.class.getSimpleName();
     private Firebase mActiveListRef;
+    private ActiveListItemAdapter mActiveListItemAdapter;
     private ListView mListView;
     private ShoppingList mShoppingList;
+    private String mListId;
+    private ValueEventListener mActiveListRefListener;
 
 
     @Override
@@ -34,10 +39,19 @@ public class ActiveListDetailsActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_active_list_details);
 
+        //Get the push ID from the extra passed by ShoppingListFragment
+        Intent intent = this.getIntent();
+        mListId = intent.getStringExtra(Constants.KEY_LIST_ID);
+        if(mListId == null){
+            finish();
+            return;
+        }
+
         /**
          * Create Firebase references
          */
-        mActiveListRef = new Firebase(Constants.FIREBASE_URL_ACTIVE_LIST);
+        mActiveListRef = new Firebase(Constants.FIREBASE_URL_ACTIVE_LISTS).child(mListId);
+        Firebase listItemsRef = new Firebase(Constants.FIREBASE_URL_SHOPPING_LIST_ITEMS).child(mListId);
 
 
         /**
@@ -45,11 +59,15 @@ public class ActiveListDetailsActivity extends BaseActivity {
          */
         initializeScreen();
 
+        //Set up the adapter
+        mActiveListItemAdapter = new ActiveListItemAdapter(this, ShoppingListItem.class, R.layout.single_active_list_item, listItemsRef, mListId);
+        mListView.setAdapter(mActiveListItemAdapter);
+
         /**
          * Save the most recent version of current shopping list into mShoppingList instance
          * variable an update the UI to match the current list.
          */
-        mActiveListRef.addValueEventListener(new ValueEventListener() {
+        mActiveListRefListener = mActiveListRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
 
@@ -69,6 +87,10 @@ public class ActiveListDetailsActivity extends BaseActivity {
                     return;
                 }
                 mShoppingList = shoppingList;
+
+                //Pass the shopping list to the adapter if it is not null
+                //We do this here because mShoppingList is null when first created
+                mActiveListItemAdapter.setShoppingList(mShoppingList);
 
                 /* Calling invalidateOptionsMenu causes onCreateOptionsMenu to be called */
                 invalidateOptionsMenu();
@@ -97,9 +119,17 @@ public class ActiveListDetailsActivity extends BaseActivity {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 /* Check that the view is not the empty footer item */
                 if(view.getId() != R.id.list_view_footer_empty) {
-                    showEditListItemNameDialog();
+                    ShoppingListItem shoppingListItem = mActiveListItemAdapter.getItem(position);
+
+                    if(shoppingListItem != null){
+                        String itemName = shoppingListItem.getItemName();
+                        String itemId = mActiveListItemAdapter.getRef(position).getKey();
+
+                        showEditListItemNameDialog(itemName, itemId);
+                        return true;
+                    }
                 }
-                return true;
+                return false;
             }
         });
     }
@@ -171,6 +201,8 @@ public class ActiveListDetailsActivity extends BaseActivity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mActiveListItemAdapter.cleanup();
+        mActiveListRef.removeEventListener(mActiveListRefListener);
     }
 
     /**
@@ -210,7 +242,7 @@ public class ActiveListDetailsActivity extends BaseActivity {
      */
     public void removeList() {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = RemoveListDialogFragment.newInstance(mShoppingList);
+        DialogFragment dialog = RemoveListDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(getFragmentManager(), "RemoveListDialogFragment");
     }
 
@@ -219,7 +251,7 @@ public class ActiveListDetailsActivity extends BaseActivity {
      */
     public void showAddListItemDialog(View view) {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList);
+        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(getFragmentManager(), "AddListItemDialogFragment");
     }
 
@@ -228,16 +260,16 @@ public class ActiveListDetailsActivity extends BaseActivity {
      */
     public void showEditListNameDialog() {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList);
+        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId);
         dialog.show(this.getFragmentManager(), "EditListNameDialogFragment");
     }
 
     /**
      * Show the edit list item name dialog after longClick on the particular item
      */
-    public void showEditListItemNameDialog() {
+    public void showEditListItemNameDialog(String itemName, String itemId) {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = EditListItemNameDialogFragment.newInstance(mShoppingList);
+        DialogFragment dialog = EditListItemNameDialogFragment.newInstance(mShoppingList, itemName, itemId, mListId);
         dialog.show(this.getFragmentManager(), "EditListItemNameDialogFragment");
     }
 

@@ -33,9 +33,7 @@ import java.util.Date;
  */
 public class ShoppingListsFragment extends Fragment {
     private ListView mListView;
-    private TextView mTextViewListName;
-    private TextView mTextViewListOwner;
-    private TextView mTextViewEditTime;
+    private ActiveListAdapter mActiveListAdapter;
 
     public ShoppingListsFragment() {
         /* Required empty public constructor */
@@ -51,12 +49,8 @@ public class ShoppingListsFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-    
 
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-    }
+
 
     /**
      * Initialize instance variables with data from bundle
@@ -77,28 +71,13 @@ public class ShoppingListsFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_shopping_lists, container, false);
         initializeScreen(rootView);
 
-        Firebase listNameRef = new Firebase(Constants.FIREBASE_URL).child(Constants.FIREBASE_LOCATION_ACTIVE_LIST);
-        listNameRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                ShoppingList shoppingList = dataSnapshot.getValue(ShoppingList.class);
-                if(shoppingList != null){
-                    mTextViewListName.setText(shoppingList.getListName());
-                    mTextViewListOwner.setText(shoppingList.getOwner());
-                    if (shoppingList.getTimestampLastChanged() != null){
-                        mTextViewEditTime.setText(Utils.SIMPLE_DATE_FORMAT.format(new Date(shoppingList.getTimestampLastChangedLong())));
-                    } else {
-                        mTextViewEditTime.setText("");
-                    }
-                }
+        //Create Firebase references
 
-            }
+        Firebase activeListsRef = new Firebase(Constants.FIREBASE_URL_ACTIVE_LISTS);
+        //Create the adapter and give it the activity, model class, layout for each row, and a reference to the firebase location with the list data
+        mActiveListAdapter = new ActiveListAdapter(getActivity(), ShoppingList.class, R.layout.single_active_list, activeListsRef);
 
-            @Override
-            public void onCancelled(FirebaseError firebaseError) {
-
-            }
-        });
+        mListView.setAdapter(mActiveListAdapter);
 
         /**
          * Set interactive bits, such as click events and adapters
@@ -107,16 +86,19 @@ public class ShoppingListsFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
+                ShoppingList selectedList = mActiveListAdapter.getItem(position);
+                if(selectedList != null){
+                    Intent intent = new Intent(getActivity(), ActiveListDetailsActivity.class);
+                    //Get the listId using the Adpater's get ref method
+                    String listId = mActiveListAdapter.getRef(position).getKey();
+                    intent.putExtra(Constants.KEY_LIST_ID, listId);
+                    //Start activity
+                    startActivity(intent);
+                }
+
             }
         });
 
-        mTextViewListName.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                Intent intent = new Intent(getActivity(), ActiveListDetailsActivity.class);
-                startActivity(intent);
-            }
-        });
 
         return rootView;
     }
@@ -124,6 +106,8 @@ public class ShoppingListsFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        //clean up adapter
+        mActiveListAdapter.cleanup();
     }
 
 
@@ -132,8 +116,5 @@ public class ShoppingListsFragment extends Fragment {
      */
     private void initializeScreen(View rootView) {
         mListView = (ListView) rootView.findViewById(R.id.list_view_active_lists);
-        mTextViewListName = (TextView) rootView.findViewById(R.id.text_view_list_name);
-        mTextViewListOwner = (TextView) rootView.findViewById(R.id.text_view_created_by_user);
-        mTextViewEditTime = (TextView) rootView.findViewById(R.id.text_view_edit_time);
     }
 }

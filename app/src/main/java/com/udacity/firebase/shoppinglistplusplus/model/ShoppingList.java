@@ -14,16 +14,19 @@ public class ShoppingList {
     String listName;
     String owner;
     private HashMap<String, Object> timestampLastChanged;
+    //unchanging timestamp for when a list was created
+    private HashMap<String, Object> timestampCreated;
 
     public ShoppingList() {
     }
 
-    public ShoppingList(String listName, String owner) {
+    public ShoppingList(String listName, String owner, HashMap<String, Object> timestampCreated) {
         this.listName = listName;
         this.owner = owner;
-        HashMap<String, Object> timestampLastChangedObj = new HashMap<String, Object>();
-        timestampLastChangedObj.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
-        this.timestampLastChanged = timestampLastChangedObj;
+        this.timestampCreated = timestampCreated;
+        HashMap<String, Object> timestampNowObject = new HashMap<String, Object>();
+        timestampNowObject.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
+        this.timestampLastChanged = timestampNowObject;
     }
 
     public String getListName() {
@@ -38,8 +41,17 @@ public class ShoppingList {
         return timestampLastChanged;
     }
 
+    public HashMap<String, Object> getTimestampCreated() {
+        return timestampCreated;
+    }
+
     @JsonIgnore
     public long getTimestampLastChangedLong(){
+        return (long) timestampLastChanged.get(Constants.FIREBASE_PROPERTY_TIMESTAMP);
+    }
+
+    @JsonIgnore
+    public long getTimestampCreatedLong(){
         return (long) timestampLastChanged.get(Constants.FIREBASE_PROPERTY_TIMESTAMP);
     }
 }
