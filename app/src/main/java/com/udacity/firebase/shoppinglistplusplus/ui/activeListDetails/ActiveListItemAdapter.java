@@ -2,15 +2,22 @@ package com.udacity.firebase.shoppinglistplusplus.ui.activeListDetails;
 
 import android.app.Activity;
 import android.content.DialogInterface;
+import android.graphics.Paint;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
+import com.firebase.client.FirebaseError;
 import com.firebase.client.Query;
 import com.firebase.client.ServerValue;
+import com.firebase.client.ValueEventListener;
 import com.firebase.ui.FirebaseListAdapter;
+import com.firebase.ui.auth.ui.User;
+import com.google.firebase.auth.FirebaseAuth;
 import com.udacity.firebase.shoppinglistplusplus.R;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingListItem;
@@ -26,11 +33,17 @@ public class ActiveListItemAdapter extends FirebaseListAdapter<ShoppingListItem>
 
     private ShoppingList mShoppingList;
     private String mListId;
+    private String mEncodedEmail;
+    FirebaseAuth mFirebaseAuth;
 
-    public ActiveListItemAdapter(Activity activity, Class<ShoppingListItem> modelClass, int modelLayout, Query ref, String listId){
+
+    public ActiveListItemAdapter(Activity activity, Class<ShoppingListItem> modelClass, int modelLayout, Query ref, String listId, String encodedEmail){
         super(activity, modelClass, modelLayout, ref);
         this.mActivity = activity;
         this.mListId = listId;
+        this.mEncodedEmail = encodedEmail;
+        mFirebaseAuth = FirebaseAuth.getInstance();
+
     }
 
     public void setShoppingList(ShoppingList shoppingList){
@@ -41,9 +54,16 @@ public class ActiveListItemAdapter extends FirebaseListAdapter<ShoppingListItem>
     @Override
     protected  void populateView(View view, final ShoppingListItem item, int position){
         ImageButton buttonRemoveItem = (ImageButton) view.findViewById(R.id.button_remove_item);
-        TextView textViewMealItemName = (TextView) view.findViewById(R.id.text_view_active_list_item_name);
+        TextView textViewItemName = (TextView) view.findViewById(R.id.text_view_active_list_item_name);
+        TextView textViewBoughtBy = (TextView) view.findViewById(R.id.text_view_bought_by);
 
-        textViewMealItemName.setText(item.getItemName());
+        String owner = item.getOwner();
+
+        textViewItemName.setText(item.getItemName());
+
+        setItemApperanceBaseOnBoughtStatus(owner, textViewBoughtBy, buttonRemoveItem, textViewItemName, item);
+
+
 
         final String itemToRemoveId = this.getRef(position).getKey();
 
@@ -95,6 +115,23 @@ public class ActiveListItemAdapter extends FirebaseListAdapter<ShoppingListItem>
         //Do the update
         firebaseRef.updateChildren(updatedRemoveItemMap);
 
+    }
+
+    private void setItemApperanceBaseOnBoughtStatus(String owner, TextView textViewBoughtBy, ImageButton buttonRemoveItem, TextView textViewItemName, ShoppingListItem item){
+        if(item.isBought() && item.getBoughtBy() != null){
+            textViewBoughtBy.setVisibility(View.VISIBLE);
+
+            buttonRemoveItem.setVisibility(View.INVISIBLE);
+
+            textViewItemName.setPaintFlags(textViewItemName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+        } else {
+            textViewItemName.setPaintFlags(textViewItemName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+
+            textViewBoughtBy.setVisibility(View.INVISIBLE);
+
+            buttonRemoveItem.setVisibility(View.VISIBLE);
+        }
     }
 
 }

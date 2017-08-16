@@ -18,11 +18,12 @@ import java.util.Objects;
 public class EditListNameDialogFragment extends EditListDialogFragment {
     private static final String LOG_TAG = ActiveListDetailsActivity.class.getSimpleName();
     String mListName;
+    String ownersId;
 
     /**
      * Public static constructor that creates fragment and passes a bundle with data into it when adapter is created
      */
-    public static EditListNameDialogFragment newInstance(ShoppingList shoppingList, String listId) {
+    public static EditListNameDialogFragment newInstance(ShoppingList shoppingList, String listId, String ownersId) {
         EditListNameDialogFragment editListNameDialogFragment = new EditListNameDialogFragment();
         Bundle bundle = EditListDialogFragment.newInstanceHelper(shoppingList, R.layout.dialog_edit_list, listId);
         //Add the name value from shoppingList

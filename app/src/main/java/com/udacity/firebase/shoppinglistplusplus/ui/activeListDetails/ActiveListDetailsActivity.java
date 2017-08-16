@@ -15,11 +15,15 @@ import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.udacity.firebase.shoppinglistplusplus.R;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingListItem;
 import com.udacity.firebase.shoppinglistplusplus.ui.BaseActivity;
 import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
+import com.udacity.firebase.shoppinglistplusplus.utils.Utils;
+
+import java.util.HashMap;
 
 /**
  * Represents the details screen for the selected shopping list
@@ -33,11 +37,22 @@ public class ActiveListDetailsActivity extends BaseActivity {
     private String mListId;
     private ValueEventListener mActiveListRefListener;
 
+    String ownersId;
+
+    private boolean mCurrentUserIsOwner = false;
+
+    FirebaseAuth mFirebaseAuth;
+
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_active_list_details);
+
+        //Get a firebaseAuth instance (used to check if the user is the owner)
+        mFirebaseAuth = FirebaseAuth.getInstance();
+
+        ownersId = mFirebaseAuth.getCurrentUser().getUid();
 
         //Get the push ID from the extra passed by ShoppingListFragment
         Intent intent = this.getIntent();
@@ -60,7 +75,7 @@ public class ActiveListDetailsActivity extends BaseActivity {
         initializeScreen();
 
         //Set up the adapter
-        mActiveListItemAdapter = new ActiveListItemAdapter(this, ShoppingListItem.class, R.layout.single_active_list_item, listItemsRef, mListId);
+        mActiveListItemAdapter = new ActiveListItemAdapter(this, ShoppingListItem.class, R.layout.single_active_list_item, listItemsRef, mListId, ownersId);
         mListView.setAdapter(mActiveListItemAdapter);
 
         /**
@@ -91,6 +106,9 @@ public class ActiveListDetailsActivity extends BaseActivity {
                 //Pass the shopping list to the adapter if it is not null
                 //We do this here because mShoppingList is null when first created
                 mActiveListItemAdapter.setShoppingList(mShoppingList);
+
+                //check if the current user is the owner
+                mCurrentUserIsOwner = Utils.checkIfOwner(shoppingList, mFirebaseAuth.getCurrentUser().getUid());
 
                 /* Calling invalidateOptionsMenu causes onCreateOptionsMenu to be called */
                 invalidateOptionsMenu();
@@ -132,7 +150,45 @@ public class ActiveListDetailsActivity extends BaseActivity {
                 return false;
             }
         });
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //Check that the view is not the empty footer item
+                if(view.getId() != R.id.list_view_footer_empty){
+                    final ShoppingListItem selectedListItem = mActiveListItemAdapter.getItem(position);
+                    String itemId = mActiveListItemAdapter.getRef(position).getKey();
+
+                    if(selectedListItem != null){
+                        //Create map and fill it in with deep path multi write operations list
+                        HashMap<String, Object> updatedItemBoughtData = new HashMap<String, Object>();
+
+                        //Buy selected item if its not already bought
+                        if(!selectedListItem.isBought()){
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, true);
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, mFirebaseAuth.getCurrentUser().getDisplayName());
+                        } else {
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT, false);
+                            updatedItemBoughtData.put(Constants.FIREBASE_PROPERTY_BOUGHT_BY, null);
+                        }
+
+                        //Do update
+                        Firebase firebaseItemLocation = new Firebase(Constants.FIREBASE_URL_SHOPPING_LIST_ITEMS).child(mListId).child(itemId);
+                        firebaseItemLocation.updateChildren(updatedItemBoughtData, new Firebase.CompletionListener() {
+                            @Override
+                            public void onComplete(FirebaseError firebaseError, Firebase firebase) {
+                                if(firebaseError != null){
+                                    Log.d(LOG_TAG, getString(R.string.log_error_updating_data) + firebaseError.getMessage());
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -148,8 +204,9 @@ public class ActiveListDetailsActivity extends BaseActivity {
         MenuItem archive = menu.findItem(R.id.action_archive);
 
         /* Only the edit and remove options are implemented */
-        remove.setVisible(true);
-        edit.setVisible(true);
+        //for remove and edit, make sure the user is the owner before granting this ability
+        remove.setVisible(mCurrentUserIsOwner);
+        edit.setVisible(mCurrentUserIsOwner);
         share.setVisible(false);
         archive.setVisible(false);
 
@@ -251,7 +308,7 @@ public class ActiveListDetailsActivity extends BaseActivity {
      */
     public void showAddListItemDialog(View view) {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList, mListId);
+        DialogFragment dialog = AddListItemDialogFragment.newInstance(mShoppingList, mListId, ownersId);
         dialog.show(getFragmentManager(), "AddListItemDialogFragment");
     }
 
@@ -260,7 +317,7 @@ public class ActiveListDetailsActivity extends BaseActivity {
      */
     public void showEditListNameDialog() {
         /* Create an instance of the dialog fragment and show it */
-        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId);
+        DialogFragment dialog = EditListNameDialogFragment.newInstance(mShoppingList, mListId, ownersId);
         dialog.show(this.getFragmentManager(), "EditListNameDialogFragment");
     }
 

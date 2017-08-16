@@ -13,6 +13,7 @@ import java.util.HashMap;
 public class ShoppingList {
     String listName;
     String owner;
+    String ownerId;
     private HashMap<String, Object> timestampLastChanged;
     //unchanging timestamp for when a list was created
     private HashMap<String, Object> timestampCreated;
@@ -20,9 +21,10 @@ public class ShoppingList {
     public ShoppingList() {
     }
 
-    public ShoppingList(String listName, String owner, HashMap<String, Object> timestampCreated) {
+    public ShoppingList(String listName, String owner, String ownerId, HashMap<String, Object> timestampCreated) {
         this.listName = listName;
         this.owner = owner;
+        this.ownerId = ownerId;
         this.timestampCreated = timestampCreated;
         HashMap<String, Object> timestampNowObject = new HashMap<String, Object>();
         timestampNowObject.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
@@ -35,6 +37,10 @@ public class ShoppingList {
 
     public String getOwner() {
         return owner;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
     }
 
     public HashMap<String, Object> getTimestampLastChanged() {

@@ -2,6 +2,8 @@ package com.udacity.firebase.shoppinglistplusplus.utils;
 
 import android.content.Context;
 
+import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
+
 import java.text.SimpleDateFormat;
 
 /**
@@ -20,6 +22,11 @@ public class Utils {
      */
     public Utils(Context con) {
         mContext = con;
+    }
+
+    //Return true if current user is the same as the shoppinglist owner
+    public static boolean checkIfOwner(ShoppingList shoppingList, String currentUserId){
+        return(shoppingList.getOwner() != null && shoppingList.getOwnerId().equals(currentUserId));
     }
 
 }

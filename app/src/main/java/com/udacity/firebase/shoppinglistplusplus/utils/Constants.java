@@ -13,6 +13,7 @@ public final class Constants {
      */
     public static final String FIREBASE_LOCATION_ACTIVE_LISTS = "activeLists";
     public static final String FIREBASE_LOCATION_SHOPPING_LIST_ITEMS = "shoppingListItems";
+    public static final String FIREBASE_LOCATION_USERS = "users";
 
     /**
      * Constants for Firebase object properties
@@ -21,6 +22,8 @@ public final class Constants {
     public static final String FIREBASE_PROPERTY_TIMESTAMP = "timestamp";
     public static final String FIREBASE_PROPERTY_ITEM_NAME = "itemName";
     public static final String FIREBASE_PROPERTY_TIMESTAMP_LAST_CHANGED = "timestampLastChanged";
+    public static final String FIREBASE_PROPERTY_BOUGHT = "bought";
+    public static final String FIREBASE_PROPERTY_BOUGHT_BY = "boughtBy";
 
     /**
      * Constants for Firebase URL
@@ -28,6 +31,7 @@ public final class Constants {
     public static final String FIREBASE_URL = BuildConfig.UNIQUE_FIREBASE_ROOT_URL;
     public static final String FIREBASE_URL_ACTIVE_LISTS = FIREBASE_URL + "/" + FIREBASE_LOCATION_ACTIVE_LISTS;
     public static final String FIREBASE_URL_SHOPPING_LIST_ITEMS = FIREBASE_URL + "/" + FIREBASE_LOCATION_SHOPPING_LIST_ITEMS;
+    public static final String FIREBASE_URL_USERS = FIREBASE_URL + "/" + FIREBASE_LOCATION_USERS;
 
     /**
      * Constants for bundles, extras and shared preferences keys
@@ -37,6 +41,8 @@ public final class Constants {
     public static final String KEY_LIST_ID = "LIST_ID";
     public static final String KEY_LIST_ITEM_NAME = "ITEM_NAME";
     public static final String KEY_LIST_ITEM_ID = "LIST_ITEM_ID";
+    public static final String KEY_PROVIDER = "PROVIDER";
+    public static final String KEY_ENCODED_EMAIL = "ENCODED_EMAIL";
 
 
 }

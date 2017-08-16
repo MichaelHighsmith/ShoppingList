@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import com.firebase.client.Firebase;
 import com.firebase.client.ServerValue;
+import com.google.firebase.auth.FirebaseAuth;
 import com.udacity.firebase.shoppinglistplusplus.R;
 import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
 import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
@@ -26,6 +27,7 @@ import java.util.HashMap;
  */
 public class AddListDialogFragment extends DialogFragment {
     EditText mEditTextListName;
+    FirebaseAuth mFirebaseAuth;
 
     /**
      * Public static constructor that creates fragment and
@@ -44,6 +46,7 @@ public class AddListDialogFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mFirebaseAuth = FirebaseAuth.getInstance();
     }
 
     /**
@@ -96,7 +99,8 @@ public class AddListDialogFragment extends DialogFragment {
      */
     public void addShoppingList() {
         String userEnteredName = mEditTextListName.getText().toString();
-        String owner = "Anonymous Owner";
+        String owner = mFirebaseAuth.getCurrentUser().getDisplayName();
+        String ownerId = mFirebaseAuth.getCurrentUser().getUid();
 
         if(!userEnteredName.equals("")){
             Firebase listsRef = new Firebase(Constants.FIREBASE_URL_ACTIVE_LISTS);
@@ -107,7 +111,7 @@ public class AddListDialogFragment extends DialogFragment {
             HashMap<String, Object> timestampCreated = new HashMap<>();
             timestampCreated.put(Constants.FIREBASE_PROPERTY_TIMESTAMP, ServerValue.TIMESTAMP);
 
-            ShoppingList newShoppingList = new ShoppingList(userEnteredName, owner, timestampCreated);
+            ShoppingList newShoppingList = new ShoppingList(userEnteredName, owner, ownerId, timestampCreated);
 
             newListRef.setValue(newShoppingList);
 
